@@ -1,0 +1,96 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    grid-template-rows: auto 1fr;
+}
+
+main {
+    background: url("../img/background.jpg") no-repeat;
+    background-size: cover;
+}
+
+.gameplay-view {
+    position: relative;
+    z-index: 5;
+    width: 900px;
+    height: 600px;
+    overflow: hidden;
+    background: white;
+    background-size: contain;
+    border: 3px solid green;
+}
+
+@keyframes rotate {
+    0% {
+        rotate: 0deg;
+    }
+    100% {
+        rotate: 360deg;
+    }
+}
+
+.fruit-elem {
+    position: absolute;
+    cursor: pointer;
+    z-index: 1;
+    animation: 3s rotate infinite linear;
+}
+
+.fruit-elem-1 {
+    background: url("../img/fruits/fruit-1.png") no-repeat;
+    background-size: contain;
+}
+
+.fruit-elem-2 {
+    background: url("../img/fruits/fruit-2.png") no-repeat;
+    background-size: contain;
+}
+
+.fruit-elem-3 {
+    background: url("../img/fruits/fruit-3.png") no-repeat;
+    background-size: contain;
+}
+
+.fruit-elem-4 {
+    background: url("../img/fruits/fruit-4.png") no-repeat;
+    background-size: contain;
+}
+.basket {
+    position: absolute;
+    user-select: none;
+    width: 56px;
+    bottom: 20px;
+
+    --x: 0px;
+
+    left: 50%;
+    translate: calc(-50% + var(--x));
+    transition: translate 0.05s;
+}
+
+#hearts {
+    --heart-1: red;
+    --heart-2: red;
+    --heart-3: red;
+}
+
+#hearts > svg {
+    width: 18px;
+    height: 18px;
+}
+
+#hearts > svg:nth-child(1) > g {
+    fill: var(--heart-1);
+}
+
+#hearts > svg:nth-child(2) > g {
+    fill: var(--heart-2);
+}
+
+#hearts > svg:nth-child(3) > g {
+    fill: var(--heart-3);
+}
