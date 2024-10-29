@@ -8,6 +8,7 @@ const usernameInput = document.getElementById('username');
 const basket = document.getElementById('basket');
 const hearts = document.getElementById('hearts');
 const audio = document.createElement('audio');
+audio.volume = 0.2;
 
 const GAME_WIDTH = 900;
 const GAME_HEIGHT = 600;
