@@ -216,7 +216,6 @@ function useGameplayPage() {
     }
 
     const endGame = () => {
-        gamePaused = true;
         useResultPage().mount();
     }
 
