@@ -8,7 +8,7 @@ const usernameInput = document.getElementById('username');
 const basket = document.getElementById('basket');
 const hearts = document.getElementById('hearts');
 const audio = document.createElement('audio');
-audio.volume = 0.2;
+audio.volume = 0.1;
 
 const GAME_WIDTH = 900;
 const GAME_HEIGHT = 600;
@@ -174,6 +174,8 @@ function useGameplayPage() {
         return { fruitElement, points: fruit.points };
     }
 
+    const removeAllFruit = () => document.querySelectorAll('.fruit-elem').forEach((elem) => elem.remove())
+
     const startGame = (button) => {
         audio.src = 'assets/poo-music.mp3';
         audio.play();
@@ -216,6 +218,8 @@ function useGameplayPage() {
     }
 
     const endGame = () => {
+        togglePause();
+        removeAllFruit();
         useResultPage().mount();
     }
 
