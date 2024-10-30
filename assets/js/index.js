@@ -10,8 +10,8 @@ const hearts = document.getElementById('hearts');
 const audio = document.createElement('audio');
 const pauseBtn = document.getElementById('pause-btn')
 const superProgress = document.getElementById('super-progress');
-superProgress.style.width = '100%'
 
+superProgress.style.width = '100%'
 audio.volume = 0.1;
 
 const GAME_WIDTH = 900;
@@ -23,6 +23,53 @@ let currentUser = null;
 let userLives = 3;
 let fruitAppearanceInterval = null;
 let gamePaused = true;
+
+// const player = {
+//     data: null,
+//     playersHistory: JSON.parse(localStorage.getItem('users')) ?? [],
+//     lives: 3,
+//
+//     createUser(name) {
+//         const existingUser = users.find((user) => user?.name === name);
+//
+//         if (existingUser) {
+//             this.data = existingUser;
+//         } else {
+//             this.data = { name, points: 0, time: 0, passed: false };
+//         }
+//     },
+//
+//     heartPainting(number, color) {
+//         hearts.style.setProperty(`--heart-${number}`, color)
+//     },
+//
+//     resetLives() {
+//         this.lives = 3;
+//         [1, 2, 3].forEach((num) => this.heartPainting(num, 'red'));
+//     },
+//
+//     decrementLives() {
+//         this.lives--;
+//
+//         switch (userLives) {
+//             case 2: this.heartPainting(3, 'gray'); break;
+//             case 1: this.heartPainting(2, 'gray'); break;
+//             case 0: {
+//                 this.heartPainting(1, 'gray');
+//                 useGameplayPage().endGame();
+//             } break;
+//         }
+//     },
+//
+//     updatePlayer({ points, time, passed }) {
+//         this.data = { ...this.data, points, passed, time }
+//     },
+//
+//     resetProgress() {
+//         this.updateUser({points: 0, passed: false, time: 0})
+//         this.resetLives();
+//     }
+// }
 
 const fruits = [
     { points: 1, image: 'fruit-1.png', radius: 40 },
@@ -150,13 +197,17 @@ function useCart() {
         }, 20);
     }
 
+    const resetCartPosition = () => {
+        basket.style.setProperty('--x', `0px`);
+    }
+
     const keyUp = () => {
         console.debug('stopped')
         arrowDragging = false;
         clearInterval(cartMovingInterval);
     }
 
-    return { keyUp, moveCart }
+    return { keyUp, moveCart, resetCartPosition }
 }
 
 let pendingInterval = null;
@@ -283,7 +334,10 @@ function useGameplayPage() {
 
     }
 
-    const removeAllFruit = () => document.querySelectorAll('.fruit-elem').forEach((elem) => elem.remove())
+    const removeAllFruit = () => document.querySelectorAll('.fruit-elem').forEach((elem) => {
+        elem.remove()
+        clearInterval(elem.interval);
+    })
 
     const startGame = (button) => {
         audio.src = 'assets/poo-music.mp3';
@@ -328,6 +382,7 @@ function useGameplayPage() {
     const endGame = () => {
         togglePause();
         removeAllFruit();
+        useCart().resetCartPosition();
         useResultPage().mount();
     }
 
