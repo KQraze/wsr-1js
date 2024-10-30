@@ -37,7 +37,12 @@ main {
     position: absolute;
     cursor: pointer;
     z-index: 1;
+    top: 0;
     animation: 3s rotate infinite linear;
+}
+
+.progress-bar {
+    transition: width 0.3s linear;
 }
 
 .fruit-elem-1 {

@@ -8,6 +8,10 @@ const usernameInput = document.getElementById('username');
 const basket = document.getElementById('basket');
 const hearts = document.getElementById('hearts');
 const audio = document.createElement('audio');
+const pauseBtn = document.getElementById('pause-btn')
+const superProgress = document.getElementById('super-progress');
+superProgress.style.width = '100%'
+
 audio.volume = 0.1;
 
 const GAME_WIDTH = 900;
@@ -29,7 +33,6 @@ const fruits = [
 
 let timerInterval = null;
 
-
 function useCurrentUser() {
     const createUser = (name) => {
         const existingUser = users.find((user) => user?.name === name);
@@ -42,7 +45,6 @@ function useCurrentUser() {
     }
 
     const heartPainting = (number, color) => hearts.style.setProperty(`--heart-${number}`, color);
-
 
     const resetLives = () => {
         userLives = 3;
@@ -114,23 +116,25 @@ function useTimer() {
     return { secondsToString, startTimer, turnOffTimer, addInnerText }
 }
 
-const cartActions = {
+let arrowDragging = false;
+const keyActions = {
     down: {
         arrowLeft: () => useCart().moveCart('left'),
-        arrowRight: () => useCart().moveCart('right')
+        arrowRight: () => useCart().moveCart('right'),
+        space: () => useGameplayPage().claimAllFruit()
     },
     up: {
         arrowLeft: () => useCart().keyUp(),
-        arrowRight: () => useCart().keyUp()
+        arrowRight: () => useCart().keyUp(),
+        space: () => useGameplayPage().clearSpaceDraggingInterval()
     }
 }
 
 let cartMovingInterval = null;
-let dragging = false;
 function useCart() {
     const moveCart = (direction) => {
-        if (dragging || gamePaused) return;
-        dragging = true;
+        if (arrowDragging || gamePaused) return;
+        arrowDragging = true;
         console.debug('moving')
 
         cartMovingInterval = setInterval(() => {
@@ -148,11 +152,74 @@ function useCart() {
 
     const keyUp = () => {
         console.debug('stopped')
-        dragging = false;
+        arrowDragging = false;
         clearInterval(cartMovingInterval);
     }
 
     return { keyUp, moveCart }
+}
+
+let pendingInterval = null;
+
+let spaceDragging = false;
+let spaceDraggingInterval = null;
+/** 'superStatus' values: 'ready' 'active' 'pending' */
+let superStatus = 'ready';
+let superTimeout = 4;
+
+function useSuper() {
+
+    const updateSuperProgress = (value) => {
+        switch (superStatus) {
+            case "ready": {
+                setStatusReady();
+            } break;
+            case "pending": {
+                superProgress.style.width = `${value * 20}%`;
+                superProgress.classList.add('bg-warning');
+            } break;
+            case "active": {
+                superProgress.style.width = `${value * 25}%`;
+                superProgress.classList.remove('bg-success');
+            }
+        }
+    }
+
+    const addSuperValueText = (text) => document.getElementById('super-value').innerText = text;
+
+    const setStatusReady = () => {
+        superStatus = 'ready';
+        superProgress.style.width = '100%';
+        addSuperValueText('READY');
+        superProgress.classList.add('bg-success');
+        superProgress.classList.remove('bg-warning');
+    }
+
+    const updateSuperValue = () => {
+        switch (superStatus) {
+            case 'ready': {
+                superStatus = 'active';
+                updateSuperProgress(--superTimeout);
+                addSuperValueText(superTimeout);
+            } break;
+            case 'active': {
+                superTimeout !== 0 ? updateSuperProgress(--superTimeout) : superStatus = 'pending'
+                addSuperValueText(superTimeout);
+            } break;
+            case 'pending': {
+                superTimeout++;
+                if (superTimeout !== 5) {
+                    updateSuperProgress(superTimeout);
+                    addSuperValueText(superTimeout);
+                } else {
+                    setStatusReady()
+                }
+            } break;
+        }
+
+    };
+
+    return { updateSuperValue };
 }
 
 function useGameplayPage() {
@@ -170,8 +237,52 @@ function useGameplayPage() {
         fruitElement.classList.add('fruit-elem', `fruit-elem-${getRandom(1, 4)}`)
         fruitElement.style.width = fruit.radius * 2 + 'px';
         fruitElement.style.height = fruit.radius * 2 + 'px';
+        fruitElement.points = fruit.points
 
-        return { fruitElement, points: fruit.points };
+        return fruitElement;
+    }
+
+    const claimingIntervalFunc = () => {
+        useSuper().updateSuperValue();
+
+        document.querySelectorAll('.fruit-elem').forEach((elem) => {
+            clearInterval(elem.interval);
+            updateScore(elem.points);
+        })
+        removeAllFruit();
+        if (superTimeout === 0) clearInterval(spaceDraggingInterval);
+    }
+
+    const claimAllFruit = () => {
+        if (superStatus !== 'ready' && (superTimeout || spaceDragging)) return;
+        console.log(superStatus);
+
+        spaceDragging = true;
+
+        claimingIntervalFunc();
+
+        spaceDraggingInterval = setInterval(claimingIntervalFunc,1000)
+    }
+
+    const clearSpaceDraggingInterval = () => {
+        console.log('1')
+        spaceDragging = false;
+        clearInterval(spaceDraggingInterval);
+        console.log('2')
+
+        if (pendingInterval) return;
+        console.log('3')
+        superTimeout = 0;
+        superStatus = 'pending';
+        console.log('4')
+        pendingInterval = setInterval(() => {
+            useSuper().updateSuperValue();
+            if (superTimeout === 5) {
+                clearInterval(pendingInterval)
+                pendingInterval = null;
+            }
+        }, 1000)
+
     }
 
     const removeAllFruit = () => document.querySelectorAll('.fruit-elem').forEach((elem) => elem.remove())
@@ -181,31 +292,30 @@ function useGameplayPage() {
         audio.play();
 
         fruitAppearanceInterval = setInterval(() => {
-            const {fruitElement, points } = createFruitElement(fruits[getRandom(0, 3)]);
+            const fruitElement = createFruitElement(fruits[getRandom(0, 3)]);
 
             fruitElement.style.left = `${getRandom(1 + 50, GAME_WIDTH - 50)}px`;
-            fruitElement.style.top = `0`;
             fruitElement.style.translate = `0 -100px`;
-
             gameplayView.append(fruitElement);
 
             let translatePosition = -100;
 
-            let interval = setInterval(() => {
+            fruitElement.interval = setInterval(() => {
                 if (gamePaused) return;
                 translatePosition += 2;
                 fruitElement.style.translate = `0 ${translatePosition}px`;
 
                 if (elementClosest(basket, fruitElement)) {
-                    clearInterval(interval);
-                    updateScore(points);
+                    clearInterval(fruitElement.interval);
+                    updateScore(fruitElement.points);
                     fruitElement.remove()
                 }
 
                 if (translatePosition > GAME_HEIGHT) {
-                    clearInterval(interval);
+                    clearInterval(fruitElement.interval);
                     fruitElement.remove()
                     useCurrentUser().decrementLives()
+                    translatePosition = -100;
                 }
 
             }, getRandom(10, 20))
@@ -233,7 +343,6 @@ function useGameplayPage() {
     }
 
     const togglePause = () => {
-        const pauseBtn = document.getElementById('pause-btn')
         gamePaused = !gamePaused;
         gamePaused ? pauseGame(pauseBtn) : startGame(pauseBtn);
     };
@@ -248,7 +357,7 @@ function useGameplayPage() {
         gameplayPage.classList.add('d-none');
     }
 
-    return { mount, unMount, togglePause, updateScore, endGame, addInnerTextScore }
+    return { mount, unMount, togglePause, updateScore, endGame, addInnerTextScore, claimAllFruit, clearSpaceDraggingInterval }
 }
 
 function useResultPage() {
@@ -288,20 +397,22 @@ function elementClosest(firstElem, secondElem) {
     const sizesFirst = firstElem.getBoundingClientRect()
     const sizesSecond = secondElem.getBoundingClientRect()
     return Math.max(sizesFirst.x, sizesSecond.x) <= Math.min(sizesFirst.x + sizesFirst.width, sizesSecond.x + sizesSecond.width) &&
-        Math.max(sizesFirst.y, sizesSecond.y) <= Math.min(sizesFirst.y + sizesFirst.height, sizesSecond.y + sizesSecond.height)
+        Math.max(sizesFirst.y + 50, sizesSecond.y) <= Math.min(sizesFirst.y + 50 + sizesFirst.height, sizesSecond.y + sizesSecond.height)
 }
 
 const keyEventHandler = (event, type) => {
     const key = event.key;
-    if (key.includes('Arrow')) event.preventDefault();
+    if (key.includes('Arrow' || ' ')) event.preventDefault();
 
     switch (key) {
+        case ' ': type === 'down' ? keyActions.down.space() : keyActions.up.space(); break;
         case 'Escape': type !== 'down' ? useGameplayPage().togglePause() : null; break;
-        case 'ArrowLeft': type === 'down' ? cartActions.down.arrowLeft() : cartActions.up.arrowLeft() ; break;
-        case 'ArrowRight': type === 'down' ? cartActions.down.arrowRight() : cartActions.up.arrowRight(); break;
+        case 'ArrowLeft': type === 'down' ? keyActions.down.arrowLeft() : keyActions.up.arrowLeft() ; break;
+        case 'ArrowRight': type === 'down' ? keyActions.down.arrowRight() : keyActions.up.arrowRight(); break;
     }
 }
 
+pauseBtn.onclick = () => useGameplayPage().togglePause();
 document.onkeydown = (event) => keyEventHandler(event, 'down');
 document.onkeyup = (event) => keyEventHandler(event, 'up');
 
