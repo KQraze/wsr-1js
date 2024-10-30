@@ -265,16 +265,14 @@ function useGameplayPage() {
     }
 
     const clearSpaceDraggingInterval = () => {
-        console.log('1')
         spaceDragging = false;
         clearInterval(spaceDraggingInterval);
-        console.log('2')
 
         if (pendingInterval) return;
-        console.log('3')
+
         superTimeout = 0;
         superStatus = 'pending';
-        console.log('4')
+
         pendingInterval = setInterval(() => {
             useSuper().updateSuperValue();
             if (superTimeout === 5) {
@@ -386,18 +384,18 @@ function useResultPage() {
     return { mount, unMount, restartGame }
 }
 
-function getRandom(min, max) {
+const getRandom = (min, max) => {
     min = Math.ceil(min)
     max = Math.floor(max)
 
     return Math.floor(Math.random()*(max-min+1)) + min
 }
 
-function elementClosest(firstElem, secondElem) {
+const elementClosest = (firstElem, secondElem) => {
     const sizesFirst = firstElem.getBoundingClientRect()
     const sizesSecond = secondElem.getBoundingClientRect()
     return Math.max(sizesFirst.x, sizesSecond.x) <= Math.min(sizesFirst.x + sizesFirst.width, sizesSecond.x + sizesSecond.width) &&
-        Math.max(sizesFirst.y + 50, sizesSecond.y) <= Math.min(sizesFirst.y + 50 + sizesFirst.height, sizesSecond.y + sizesSecond.height)
+        Math.max(sizesFirst.y + 20, sizesSecond.y) <= Math.min(sizesFirst.y + 20 + sizesFirst.height, sizesSecond.y + sizesSecond.height)
 }
 
 const keyEventHandler = (event, type) => {
