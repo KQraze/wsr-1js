@@ -113,12 +113,24 @@ function useCurrentUser() {
 
     const updateUser = ({ points, time, passed }) => currentUser = { ...currentUser, points, passed, time }
 
+    const updateUsersStorage = () => {
+        localStorage.setItem('users', JSON.stringify(users));
+    }
+
     const resetProgress = () => {
         updateUser({points: 0, passed: false, time: 0})
         resetLives();
     }
 
-    return { createUser, resetLives, decrementLives, updateUser, resetProgress }
+    const addUserToResults = (currUser) => {
+        let foundedUserIndex = users.findIndex((user) => user.name === currUser.name);
+
+        if (foundedUserIndex) {
+            users[foundedUserIndex] = { ...users[foundedUserIndex], ...currUser }
+        }
+    }
+
+    return { createUser, resetLives, decrementLives, updateUser, resetProgress, updateUsersStorage, addUserToResults }
 }
 
 function useStartPage() {
@@ -273,6 +285,35 @@ function useSuper() {
     return { updateSuperValue };
 }
 
+function useTable() {
+    const tbody = document.getElementById('tbody');
+
+    const showTable = () => {
+        let sorted = users.sort((a, b) => b.points - a.points);
+        sorted.forEach((user) => {
+            const tr = document.createElement('tr');
+            Object.keys(user).forEach((field, index) => {
+                let elem;
+                if (index === 0) {
+                    elem = document.createElement('th');
+                    elem.classList.add('row');
+                } else {
+                    elem = document.createElement('td');
+                }
+                elem.innerText = user[field];
+                tr.append(elem);
+            })
+            tbody.append(tr);
+        })
+    }
+
+    const removeTable = () => {
+        tbody.innerHTML = '';
+    }
+
+    return { showTable, removeTable }
+}
+
 function useGameplayPage() {
 
     const addInnerTextScore = (points) => document.getElementById('score').innerText = points + ' points';
@@ -354,7 +395,7 @@ function useGameplayPage() {
 
             fruitElement.interval = setInterval(() => {
                 if (gamePaused) return;
-                translatePosition += 2;
+                translatePosition += 5;
                 fruitElement.style.translate = `0 ${translatePosition}px`;
 
                 if (elementClosest(basket, fruitElement)) {
@@ -416,6 +457,7 @@ function useGameplayPage() {
 function useResultPage() {
     const resultPoints = document.getElementById('result-points');
     const resultTime = document.getElementById('result-time');
+    const resultStatus = document.getElementById('result-status');
 
     const restartGame = () => {
         useCurrentUser().resetProgress();
@@ -426,14 +468,28 @@ function useResultPage() {
 
     const mount = () => {
         resultPage.classList.remove('d-none');
+        resultPage.classList.add('d-flex');
         resultPoints.innerText = currentUser.points;
         resultTime.innerText = useTimer().secondsToString(currentUser.time);
-        useStartPage().unMount()
-        useGameplayPage().unMount()
+        currentUser.passed = currentUser.time >= 10;
+        if (currentUser.passed) {
+            resultStatus.innerText = 'Выиграли'
+            resultStatus.parentElement.classList.add('text-success')
+        } else {
+            resultStatus.innerText = 'Проиграли'
+            resultStatus.parentElement.classList.add('text-danger')
+        }
+
+        useCurrentUser().addUserToResults(currentUser);
+        useCurrentUser().updateUsersStorage();
+        useTable().showTable();
+        useStartPage().unMount();
+        useGameplayPage().unMount();
     }
 
     const unMount = () => {
         resultPage.classList.add('d-none');
+        useTable().removeTable();
     }
 
     return { mount, unMount, restartGame }
