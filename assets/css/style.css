@@ -99,3 +99,11 @@ main {
 #hearts > svg:nth-child(3) > g {
     fill: var(--heart-3);
 }
+
+#super-progress {
+    width: 100%;
+}
+
+.btn {
+    width: fit-content;
+}

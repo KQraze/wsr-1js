@@ -11,7 +11,6 @@ const audio = document.createElement('audio');
 const pauseBtn = document.getElementById('pause-btn')
 const superProgress = document.getElementById('super-progress');
 
-superProgress.style.width = '100%'
 audio.volume = 0.1;
 
 const GAME_WIDTH = 900;
@@ -23,53 +22,6 @@ let currentUser = null;
 let userLives = 3;
 let fruitAppearanceInterval = null;
 let gamePaused = true;
-
-// const player = {
-//     data: null,
-//     playersHistory: JSON.parse(localStorage.getItem('users')) ?? [],
-//     lives: 3,
-//
-//     createUser(name) {
-//         const existingUser = users.find((user) => user?.name === name);
-//
-//         if (existingUser) {
-//             this.data = existingUser;
-//         } else {
-//             this.data = { name, points: 0, time: 0, passed: false };
-//         }
-//     },
-//
-//     heartPainting(number, color) {
-//         hearts.style.setProperty(`--heart-${number}`, color)
-//     },
-//
-//     resetLives() {
-//         this.lives = 3;
-//         [1, 2, 3].forEach((num) => this.heartPainting(num, 'red'));
-//     },
-//
-//     decrementLives() {
-//         this.lives--;
-//
-//         switch (userLives) {
-//             case 2: this.heartPainting(3, 'gray'); break;
-//             case 1: this.heartPainting(2, 'gray'); break;
-//             case 0: {
-//                 this.heartPainting(1, 'gray');
-//                 useGameplayPage().endGame();
-//             } break;
-//         }
-//     },
-//
-//     updatePlayer({ points, time, passed }) {
-//         this.data = { ...this.data, points, passed, time }
-//     },
-//
-//     resetProgress() {
-//         this.updateUser({points: 0, passed: false, time: 0})
-//         this.resetLives();
-//     }
-// }
 
 const fruits = [
     { points: 1, image: 'fruit-1.png', radius: 40 },
@@ -87,7 +39,7 @@ function useCurrentUser() {
         if (existingUser) {
             currentUser = existingUser;
         } else {
-            currentUser = { name, points: 0, time: 0, passed: false };
+            currentUser = { name, points: 0, recordTime: 0, time: 0, record: 0, passed: false };
         }
     }
 
@@ -118,16 +70,20 @@ function useCurrentUser() {
     }
 
     const resetProgress = () => {
-        updateUser({points: 0, passed: false, time: 0})
+        updateUser({points: 0, time: 0})
         resetLives();
     }
 
     const addUserToResults = (currUser) => {
-        let foundedUserIndex = users.findIndex((user) => user.name === currUser.name);
+        const foundedUserIndex = users.findIndex((user) => user.name === currUser.name);
 
-        if (foundedUserIndex) {
+        if (foundedUserIndex >= 0) {
             users[foundedUserIndex] = { ...users[foundedUserIndex], ...currUser }
+        } else {
+            users.push(currUser);
         }
+
+        updateUsersStorage();
     }
 
     return { createUser, resetLives, decrementLives, updateUser, resetProgress, updateUsersStorage, addUserToResults }
@@ -289,18 +245,34 @@ function useTable() {
     const tbody = document.getElementById('tbody');
 
     const showTable = () => {
-        let sorted = users.sort((a, b) => b.points - a.points);
+        let sorted = users.sort((a, b) => b.record - a.record);
         sorted.forEach((user) => {
             const tr = document.createElement('tr');
             Object.keys(user).forEach((field, index) => {
+                if (['passed', 'points', 'time'].includes(field)) return;
                 let elem;
                 if (index === 0) {
                     elem = document.createElement('th');
-                    elem.classList.add('row');
                 } else {
                     elem = document.createElement('td');
                 }
-                elem.innerText = user[field];
+                elem.scope = 'col';
+                elem.innerText = (() => {
+                    switch (field) {
+                        case 'name': {
+                            user[field] === currentUser.name ? tr.classList.add('table-active') : null;
+                            return user[field]
+                        }
+                        case 'recordTime': {
+                            return useTimer().secondsToString(user[field])
+                        }
+                        case 'passed': {
+                            elem.classList.add(user[field] ? 'text-success' : 'text-danger');
+                            return user[field] ? 'Выиграл' : 'Проиграл';
+                        }
+                        default: return user[field]
+                    }
+                })();
                 tr.append(elem);
             })
             tbody.append(tr);
@@ -382,6 +354,7 @@ function useGameplayPage() {
 
     const startGame = (button) => {
         audio.src = 'assets/poo-music.mp3';
+        audio.autoplay = true;
         audio.play();
 
         fruitAppearanceInterval = setInterval(() => {
@@ -442,6 +415,8 @@ function useGameplayPage() {
     };
 
     const mount = () => {
+        document.getElementById('current-username').innerText = `Игрок: ${currentUser.name}`;
+        useCurrentUser().resetProgress();
         gameplayPage.classList.remove('d-none');
         useStartPage().unMount();
         useResultPage().unMount();
@@ -467,21 +442,29 @@ function useResultPage() {
     }
 
     const mount = () => {
+        const { points, time, record } = currentUser;
+
         resultPage.classList.remove('d-none');
         resultPage.classList.add('d-flex');
-        resultPoints.innerText = currentUser.points;
-        resultTime.innerText = useTimer().secondsToString(currentUser.time);
-        currentUser.passed = currentUser.time >= 10;
+        resultPoints.innerText = points;
+        resultTime.innerText = useTimer().secondsToString(time);
+        currentUser.passed = time >= 10;
+
+        currentUser.record = record < points ? (() => {
+            currentUser.recordTime = time;
+            return points;
+        })() : currentUser.record;
+
         if (currentUser.passed) {
             resultStatus.innerText = 'Выиграли'
+            resultStatus.parentElement.classList.remove('text-danger')
             resultStatus.parentElement.classList.add('text-success')
         } else {
             resultStatus.innerText = 'Проиграли'
+            resultStatus.parentElement.classList.remove('text-success')
             resultStatus.parentElement.classList.add('text-danger')
         }
-
         useCurrentUser().addUserToResults(currentUser);
-        useCurrentUser().updateUsersStorage();
         useTable().showTable();
         useStartPage().unMount();
         useGameplayPage().unMount();

@@ -12,9 +12,10 @@
     <title>Фруктосбор</title>
 </head>
 <body class="min-vh-100 d-grid">
-<header class="d-flex py-3 col-3 bg-success w-100">
-    <div class="container d-flex">
-        <h1 class="fs-4 text-white">Фруктосбор</h1>
+<header class="d-flex py-3 col-3 bg-success w-100 align-items-center">
+    <div class="container d-flex align-items-center justify-content-between">
+        <h1 class="fs-4 text-white my-0">Фруктосбор</h1>
+        <p class="fs-5 text-white my-0" id="current-username"></p>
     </div>
 </header>
 <main>
@@ -102,29 +103,29 @@
       </div>
   </div>
   <div class="d-none h-100 align-items-center" id="result-page">
-      <div class="container-xxl flex-grow-1 d-flex flex-column justify-content-stretch align-items-center gap-3">
-          <h2>Вы <span id="result-status"></span></h2>
-          <h2 class="fs-1">Вы набрали: <span class="text-success" id="result-points"></span> points за <span class="text-success" id="result-time"></span></h2>
-          <button class="btn btn-lg btn-success text-white" onclick="useResultPage().restartGame()">Играть сначала</button>
-
-          <table class="table">
-              <thead>
-                  <tr>
-                      <th scope="col">Имя игрока</th>
-                      <th scope="col">Очки</th>
-                      <th scope="col">Время</th>
-                      <th scope="col">Статус</th>
-                  </tr>
-              </thead>
-              <tbody id="tbody">
-<!--                  <tr>-->
-<!--                      <th scope="row">1</th>-->
-<!--                      <td>Mark</td>-->
-<!--                      <td>Otto</td>-->
-<!--                      <td>@mdo</td>-->
-<!--                  </tr>-->
-              </tbody>
-          </table>
+      <div class="container-xxl m flex-grow-1 d-flex flex-column justify-content-stretch align-items-center gap-3">
+          <div class="row w-100 align-items-stretch">
+              <div class="col d-flex flex-column justify-content-between">
+                  <div>
+                      <h2 class="fs-1">Вы <span id="result-status"></span></h2>
+                      <h2 class="fs-4">Вы набрали: <span class="text-success" id="result-points"></span> points за <span class="text-success" id="result-time"></span></h2>
+                  </div>
+                  <button class="btn btn-lg btn-success text-white" onclick="useResultPage().restartGame()">Играть сначала</button>
+              </div>
+              <div class="col d-flex flex-column align-items-center">
+                  <h3 class="fs-3">Таблица рекордов:</h3>
+                  <table class="table">
+                      <thead class="w-100">
+                      <tr>
+                          <th scope="col">Имя игрока</th>
+                          <th scope="col">Время</th>
+                          <th scope="col">Рекорд</th>
+                      </tr>
+                      </thead>
+                      <tbody id="tbody" class="w-100"></tbody>
+                  </table>
+              </div>
+          </div>
       </div>
   </div>
 </main>
